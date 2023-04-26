@@ -1,0 +1,152 @@
+---
+title: "RDA_Contaminants~Microbioma"
+author: "Elena Baños Lara"
+date: "29/4/2022"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+## Necessary libraries:
+```{r, message=FALSE, warning=FALSE}
+ library(vegan)
+# library(scales)
+# library(RColorBrewer)
+# library(VennDiagram)
+ library(gplots)
+ library(ggplot2)
+# library(ggpubr)
+# library(car)
+# library(pairwiseAdonis)
+# library(ggVennDiagram)
+# library(ggplot2)
+# library(eulerr)
+ library(devtools)
+# library(wrapr)
+# library(tidyr)
+ library(dplyr)
+ library(stringr)
+library(tidyr)
+ library(reshape)
+ library(reshape2)
+# library(data.table)
+# devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+# library(pairwiseAdonis)
+# library(tibble)
+# library(tidyverse)
+# library(dtplyr)
+# install.packages("rlang")
+# library(rlang)
+library("clusterSim")
+#library("BiodiversityR")
+#library("ggrepel")
+#library("ggforce")
+#library("data.table")
+
+#devtools::install_github("gavinsimpson/ggvegan")
+```
+
+## RDA
+RDA: combines regression and PCA, it is an extension of regression analysis to model multivariate response data. RDA computes axes that are linear combinations of the explanatory variables (in order of which explain the most variation of the species matrix). The axes are orthogonal to eachother (i.e. right angles). It is constrained because you are directly testing the influence of explanatory variables.
+```{r}
+# Fes el dataset bo
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+
+pollutans <- read.table("pollutants_rda.txt", header = TRUE, sep = "\t")
+pollutans <- pollutans[c(2:55),]
+
+as.data.frame(pollutans)
+
+pollutants <- data.Normalization(pollutans[,c(2:10)], type = "n1", normalization = "column")
+#samples <-read.table("asv_taxonomy_april2020_rda.txt", header = TRUE, sep = "\t")
+
+```
+
+####PCA biplot
+
+```{r}
+env_PCA <- princomp(pollutants, cor = F)
+summary(env_PCA)
+tissue <- pollutans$TISSUE
+stage <- pollutans$STAGE
+pop <- pollutans$POP
+
+
+
+env_PCA_plot <- as.data.frame(env_PCA$scores)
+mycol <- c("#EC7063","#F4D03F","#85C1E9")  
+
+
+pdf("PCA_pollutants_loadings.pdf", width=4, height=4)
+screeplot(env_PCA, type = "barplot")
+dev.off()
+
+PCA_loadings <- env_PCA$loadings
+#write.table(PCA_loadings, file="PCA_pol_loadings.txt", sep = "\t")
+PCA_loadings <- read.table("PCA_pol_loadings.txt", header = TRUE, sep = "\t")
+rownames(PCA_loadings) <- PCA_loadings$X
+PCA_loadings <- PCA_loadings[,c(2:10)]
+
+
+pdf("RDA_nomespol_1vs2.pdf", width = 7, height = 6)
+ggplot(data = env_PCA_plot, aes(x = Comp.1, y = Comp.2))+
+  geom_point(data = env_PCA_plot, size = 4, aes(color=tissue, shape=pop, fill=stage, alpha=1), stroke = 1.5)+
+  geom_segment(data = PCA_loadings, aes(x = 0, xend = 4*Comp.1, y = 0, yend = 4*Comp.2),
+               arrow = arrow(length = unit(0.3, "cm")), colour = "steelblue", cex=1) +
+  geom_hline(yintercept = 0, lty = "dotted", color="grey", cex=1) +    geom_vline(xintercept = 0, lty = "dotted", color="grey", cex=1) +
+  geom_text(data = PCA_loadings, aes(x= 4.5*Comp.1, y = 4.5*Comp.2, label = rownames(PCA_loadings)), 
+            size = 5, hjust = 0.5)+
+  #geom_text(data = prdav, aes(x = RDA1, y = RDA2, label = rownames(prdav)), 
+  #         size = 2.5, col = "black", hjust = 1.2)+
+  theme( legend.position="none", 
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.background = element_rect(fill = "transparent", colour = NA))+
+  scale_fill_manual(values=mycol, labels=c("Tunic","Gill","Water"))+
+  scale_shape_manual(values=c(25,23,21)) +
+  scale_color_manual(values=c("#DB7093","#815c97","steelblue")) +
+  theme_classic()+
+  #labs(x = paste("RDA2 (", round(summary(sty.rda)$cont$importance[2,2]*100, 2), "%)", sep = ""), y = paste("RDA3 (", round(summary(sty.rda)$cont$importance[2,3]*100, 2), "%)", sep = ""))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(axis.text = element_text(colour = "black", size = 12, face = "bold")) +
+  theme(axis.title = element_text(size = 16, colour = "black", family = "Helvetica", face = "bold"))   
+dev.off()
+
+
+pdf("RDA_nomespol_2vs3.pdf", width = 7, height = 6)
+ggplot(data = env_PCA_plot, aes(x = Comp.2, y = Comp.3))+
+  geom_point(data = env_PCA_plot, size = 4, aes(color=tissue, shape=pop, fill=stage, alpha=1), stroke = 1.5)+
+  geom_segment(data = PCA_loadings, aes(x = 0, xend = 4*Comp.2, y = 0, yend = 4*Comp.3),
+               arrow = arrow(length = unit(0.3, "cm")), colour = "steelblue", cex=1) +
+  geom_hline(yintercept = 0, lty = "dotted", color="grey", cex=1) +    geom_vline(xintercept = 0, lty = "dotted", color="grey", cex=1) +
+  geom_text(data = PCA_loadings, aes(x= 4.5*Comp.2, y = 4.5*Comp.3, label = rownames(PCA_loadings)), 
+            size = 5, hjust = 0.5)+
+  #geom_text(data = prdav, aes(x = RDA1, y = RDA2, label = rownames(prdav)), 
+  #         size = 2.5, col = "black", hjust = 1.2)+
+  theme( legend.position="none", 
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.background = element_rect(fill = "transparent", colour = NA))+
+  scale_fill_manual(values=mycol, labels=c("Tunic","Gill","Water"))+
+  scale_shape_manual(values=c(25,23,21)) +
+  scale_color_manual(values=c("#DB7093","#815c97","steelblue")) +
+  theme_classic()+
+  #labs(x = paste("RDA2 (", round(summary(sty.rda)$cont$importance[2,2]*100, 2), "%)", sep = ""), y = paste("RDA3 (", round(summary(sty.rda)$cont$importance[2,3]*100, 2), "%)", sep = ""))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(axis.text = element_text(colour = "black", size = 12, face = "bold")) +
+  theme(axis.title = element_text(size = 16, colour = "black", family = "Helvetica", face = "bold"))   
+dev.off()
+
+
+```

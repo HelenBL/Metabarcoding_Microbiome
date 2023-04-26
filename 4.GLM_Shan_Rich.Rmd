@@ -1,0 +1,267 @@
+---
+title: "GLM SHAN I RICH"
+author: "Carles Galià Camps"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(rsq)
+library(lme4) # for the analysis
+library(haven) # to load the SPSS .sav file
+library(tidyverse) # needed for data manipulation.
+library(RColorBrewer) # needed for some extra colours in one of the graphs
+library(lmerTest)# to get p-value estimations that are not part of the standard lme4 packages
+library(car)
+library(emmeans)
+library(pbkrtest)
+```
+
+### Carrega i modifica el data. Primer descartem aigua
+
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+codes2<-read.csv("richness_shannon.txt",sep="\t", dec=".")
+
+
+glm_tissue <- codes2[,c(1:4)]
+glm_stage <- codes2[,c(1:3,5)]
+glm_no_w <- codes2[codes2$STAGE!="4WATER",]
+
+glm_wtun<-glm_stage
+glm_wtun$STAGE[glm_wtun$STAGE!="4WATER"]<-"TUNICATE"
+names(glm_wtun)[4]<-"WTUN"
+
+
+```
+
+##SHannon general
+
+```{r}
+GLM_shan_wt <- glm(Shannon ~ 
+               WTUN,
+                data = glm_wtun)
+
+hist(resid(GLM_shan_wt))
+
+shapiro.test(residuals(GLM_shan_wt))
+
+anova(GLM_shan_wt, test="F")
+
+rsq(GLM_shan_wt,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+GLM_shan_wt_pair <- emmeans(GLM_shan_wt, pairwise ~ WTUN , adjust = "tuckey")
+
+pairs(GLM_shan_wt_pair)
+
+emmip(GLM_shan_wt_pair, ~ WTUN , CIs=TRUE)
+
+
+
+```
+
+
+```{r}
+GLM_rich_wt <- glm(sqrt(Richness) ~
+               WTUN,
+                data = glm_wtun)
+
+hist(resid(GLM_rich_wt))
+
+shapiro.test(residuals(GLM_rich_wt))
+
+anova(GLM_rich_wt, test="F")
+
+rsq(GLM_rich_wt,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+GLM_rich_wt_pair <- emmeans(GLM_rich_wt, pairwise ~ WTUN, adjust = "tuckey")
+
+pairs(GLM_rich_wt_pair)
+
+emmip(GLM_rich_wt_pair, ~ WTUN , CIs=TRUE)
+```
+
+## SHANNON
+
+```{r}
+# GLM_shan_t <- glm(Shannon ~ 
+#                TISSUE * POP,
+#                 data = glm_tissue)
+# 
+# GLM_shan_s <- glm(Shannon ~ 
+#                   STAGE + POP + 
+#                   STAGE * POP ,
+#                 data = glm_stage)
+# 
+# 
+# #qqnorm(resid(GLM_shan_t)) + qqline(resid(GLM_shan_t))
+# #qqnorm(resid(GLM_shan_s)) + qqline(resid(GLM_shan_s))
+# 
+# hist(resid(GLM_shan_t))
+# hist(resid(GLM_shan_s))
+# 
+# shapiro.test(residuals(GLM_shan_t))
+# shapiro.test(residuals(GLM_shan_s))
+# 
+# anova(GLM_shan_t, test="F")
+# anova(GLM_shan_s, test="F")
+# 
+# rsq(GLM_shan_t,adj=TRUE,type=c('v','kl','sse','lr','n'))
+# rsq(GLM_shan_s,adj=TRUE,type=c('v','kl','sse','lr','n'))
+# 
+# GLM_shan_t_pair <- emmeans(GLM_shan_t, pairwise ~  TISSUE, adjust = "tuckey")
+# GLM_shan_s_pair <- emmeans(GLM_shan_s, pairwise ~  STAGE, adjust = "tuckey")
+# 
+# pairs(GLM_shan_t_pair)
+# pairs(GLM_shan_s_pair)
+# 
+# emmip(GLM_shan_t_pair, ~ TISSUE , CIs=TRUE)
+# emmip(GLM_shan_s_pair, ~ STAGE , CIs=TRUE)
+```
+
+
+##RICHNESS
+
+```{r}
+# GLM_rich_t <- glm(sqrt(Richness) ~ 
+#                TISSUE * POP ,
+#                 data = glm_tissue)
+# 
+# GLM_rich_s <- glm(sqrt(Richness) ~ 
+#                   STAGE + POP + 
+#                   STAGE * POP ,
+#                 data = glm_stage)
+# 
+# #qqnorm(resid(GLM_rich_t)) + qqline(resid(GLM_rich_t))
+# #qqnorm(resid(GLM_rich_s)) + qqline(resid(GLM_rich_s))
+# 
+# hist(resid(GLM_rich_t))
+# hist(resid(GLM_rich_s))
+# 
+# shapiro.test(residuals(GLM_rich_t))
+# shapiro.test(residuals(GLM_rich_s))
+# 
+# anova(GLM_rich_t, test="F")
+# anova(GLM_rich_s, test="F")
+# 
+# rsq(GLM_rich_t,adj=TRUE,type=c('v','kl','sse','lr','n'))
+# rsq(GLM_rich_s,adj=TRUE,type=c('v','kl','sse','lr','n'))
+# 
+# GLM_rich_t_pair <- emmeans(GLM_rich_t, pairwise ~ TISSUE, adjust = "tuckey")
+# GLM_rich_s_pair <- emmeans(GLM_rich_s, pairwise ~  STAGE, adjust = "tuckey")
+# 
+# pairs(GLM_rich_t_pair)
+# pairs(GLM_rich_s_pair)
+# 
+# emmip(GLM_rich_t_pair, ~ TISSUE , CIs=TRUE)
+# emmip(GLM_rich_s_pair, ~ STAGE , CIs=TRUE)
+```
+
+
+## SHANNON NO AIGUA
+
+```{r}
+GLM_shan_w <- glm(Shannon ~ 
+               TISSUE + POP + STAGE +
+                 TISSUE * POP +
+                 TISSUE * STAGE +
+                 POP * STAGE +
+                 TISSUE * POP * STAGE,
+                data = glm_no_w)
+
+#qqnorm(resid(GLM_shan_w)) + qqline(resid(GLM_shan_w))
+
+hist(resid(GLM_shan_w))
+
+shapiro.test(residuals(GLM_shan_w))
+summary(GLM_shan_w)
+
+anova(GLM_shan_w, test="F")
+
+rsq(GLM_shan_w,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+GLM_shan_w_pair_P <- emmeans(GLM_shan_w, pairwise ~ POP, adjust = "tuckey")
+GLM_shan_w_pair_T <- emmeans(GLM_shan_w, pairwise ~ TISSUE|STAGE, adjust = "tuckey")
+GLM_shan_w_pair_S <- emmeans(GLM_shan_w, pairwise ~ STAGE|TISSUE, adjust = "tuckey")
+GLM_shan_w_pair_ALL <- emmeans(GLM_shan_w, pairwise ~ POP|STAGE|TISSUE, adjust = "tuckey")
+
+pairs(GLM_shan_w_pair_P)
+pairs(GLM_shan_w_pair_T)
+pairs(GLM_shan_w_pair_S)
+pairs(GLM_shan_w_pair_ALL)
+
+emmip(GLM_shan_w_pair_P, ~ POP , CIs=TRUE) 
+emmip(GLM_shan_w_pair_T, TISSUE~STAGE  , CIs=TRUE) + theme(legend.position = "top") + scale_colour_manual(name = "TISSUE", breaks=c("1GUT", "2GILL", "3TUNIC"), values=c("#58D68D","#EC7063", "#F4D03F"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+emmip(GLM_shan_w_pair_S, STAGE~TISSUE , CIs=TRUE) + scale_colour_manual(name = "STAGE", breaks=c("1JUV", "2ADULT"), values=c("#DB7093","#815c97"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+
+emmip(GLM_shan_w_pair_ALL, TISSUE~STAGE|POP , CIs=TRUE) + scale_colour_manual(name = "TISSUE", breaks=c("1GUT", "2GILL", "3TUNIC"), values=c("#58D68D","#EC7063", "#F4D03F"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+```
+
+## RICHNESS NO AIGUA
+
+```{r}
+GLM_rich_w <- aov(sqrt(Richness) ~ 
+               TISSUE + POP + STAGE +
+                 TISSUE * POP +
+                 TISSUE * STAGE +
+                 POP * STAGE +
+                 TISSUE * POP * STAGE,
+                data = glm_no_w)
+
+#qqnorm(resid(GLM_rich_w)) + qqline(resid(GLM_rich_w))
+
+hist(resid(GLM_rich_w))
+
+shapiro.test(residuals(GLM_rich_w))
+
+anova(GLM_rich_w, test="F")
+
+#rsq(GLM_rich_w, adj=TRUE, type=c('v','kl','sse','lr','n'))
+
+GLM_rich_w_pair_T <- emmeans(GLM_rich_w, pairwise ~ TISSUE, adjust = "tuckey")
+GLM_rich_w_pair_S <- emmeans(GLM_rich_w, pairwise ~ STAGE|POP, adjust = "tuckey")
+GLM_rich_w_pair_P <- emmeans(GLM_rich_w, pairwise ~ POP|STAGE, adjust = "tuckey")
+GLM_rich_w_pair_ALL <- emmeans(GLM_rich_w, pairwise ~ POP|STAGE|TISSUE, adjust = "tuckey")
+
+
+pairs(GLM_rich_w_pair_T)
+pairs(GLM_rich_w_pair_S)
+pairs(GLM_rich_w_pair_P)
+pairs(GLM_rich_w_pair_ALL)
+
+
+emmip(GLM_rich_w_pair_T, ~ TISSUE , CIs=TRUE) 
+emmip(GLM_rich_w_pair_S, STAGE~POP , CIs=TRUE) + scale_colour_manual(name = "STAGE", breaks=c("1JUV", "2ADULT"), values=c("#DB7093","#815c97"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+emmip(GLM_rich_w_pair_P, POP~STAGE  , CIs=TRUE) + theme(legend.position = "top") + scale_colour_manual(name = "POP", breaks=c("BLA", "BAR", "VIL"), values=c("grey20","grey60", "grey80"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+
+emmip(GLM_rich_w_pair_ALL, TISSUE~STAGE|POP , CIs=TRUE) + scale_colour_manual(name = "TISSUE", breaks=c("1GUT", "2GILL", "3TUNIC"), values=c("#58D68D","#EC7063", "#F4D03F"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+emmip(GLM_rich_w_pair_ALL, STAGE~POP|TISSUE , CIs=TRUE) + scale_colour_manual(name = "STAGE", breaks=c("1JUV", "2ADULT"), values=c("#DB7093","#815c97"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+emmip(GLM_rich_w_pair_ALL, POP~STAGE|TISSUE , CIs=TRUE) + scale_colour_manual(name = "POP", breaks=c("BLA", "BAR", "VIL"), values=c("grey20","grey60", "grey80"))# + scale_x_discrete(breaks=c("Plants", "Protostomes", "Deuterostomes")))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

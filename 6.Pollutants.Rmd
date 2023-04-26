@@ -1,0 +1,114 @@
+---
+title: "Species Richness"
+author: "Elena Baños"
+date: "19/02/2023"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+## Necessary libraries:
+```{r, message=FALSE, warning=FALSE}
+library(ggpubr)
+library(vegan)
+library(scales)
+library(RColorBrewer)
+library(VennDiagram)
+library(gplots)
+library(car)
+library(pairwiseAdonis)
+library(ggVennDiagram)
+library(ggplot2)
+library(eulerr)
+library(devtools)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(data.table)
+library(tidyverse)
+
+devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+
+```
+## Importem el set de dades .csv:
+In $Session$ we can indicate the directory where we have the files and make it the main one.Or we can set our working diractory manually:
+The file we want to open contains the OTUs or AVS's and others.
+
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+```
+
+
+```{r}
+pollutants <- read.table("pollutants_raw.txt", sep = "\t", header=T)
+pollutants <- pollutants[c(2:46),]
+#obtingut d'editar fora el richness shannon
+pollutants <- melt(pollutants)
+
+pol_plot<-aggregate(pollutants,list(pollutants$TISSUE,pollutants$STAGE,pollutants$varibale),sum)
+
+options(scipen = 0)
+
+pdf("pollutants.pdf", width=9, height=5)
+
+ggplot(pollutants, aes(x=variable, color=STAGE, fill=TISSUE)) + 
+  geom_boxplot(aes(y=value), position=position_dodge(0.8)) +
+  #geom_point(aes(y=value), position=position_jitter(0.1)) +
+  xlab(NULL) + 
+  ylab("Trace element ppm") +
+  #facet_grid(factor(POP, levels=c("BLA","BAR","VIL"))~.) +
+  coord_cartesian(ylim = c(0.000001,8000)) +
+  theme_classic() +
+  theme( legend.position="top", 
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.background = element_rect(fill = "transparent", colour = NA))+
+    scale_fill_manual(name = "TISSUE", breaks=c("1TUNIC","2GILL","3WATER"), values=c("#F4D03F","#EC7063","#85C1E9"))+
+  scale_color_manual( values=c( "#DB7093","#815c97","steelblue")) +
+  scale_y_continuous(trans='log10')+
+  scale_x_discrete(limits=c("As","Cu","Al","Fe","Pb","V","Zn","Se","B"))
+
+dev.off()
+```
+
+
+```{r}
+pollutants_bar <- read.table("pollutants_raw_bar.txt", sep = "\t", header=T) #obtingut d'editar fora el richness shannon
+#write.table(pollutants_bar, "pollutants_raw_bar.txt", sep="\t")
+
+
+svg("pollutants_bar.svg", width=5, height=9)
+
+ggplot(pollutants_bar, aes(x= element, y=mean, fill=comb, color=comb)) + 
+  geom_bar(stat="identity", position=position_dodge(0.9), size=1.1) +
+  geom_errorbar(aes(ymin=mean, ymax=mean+(serror)), width=0.5,
+                 position=position_dodge(0.9), alpha=0.9, size=1.4)+
+  #geom_point(aes(y=value), position=position_jitter(0.1)) +
+  xlab(NULL) + 
+  ylab("Trace element ppm") +
+  #facet_grid(factor(POP, levels=c("BLA","BAR","VIL"))~.) +
+  coord_cartesian(ylim = c(0,10000)) +
+  theme_classic() +
+  theme( legend.position="none", 
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.background = element_rect(fill = "transparent", colour = NA))+
+    scale_fill_manual(name = "comb", breaks=c("4JuvTun","3AdultTun","2AdulltGill", "1Water"), values=c("#F4D03F","#F4D03F","#EC7063","#85C1E9"))+
+  scale_color_manual( values=c( "black","black","black","black")) +
+  scale_y_continuous(trans=scales::pseudo_log_trans(base = 10), breaks = c(0, 10, 100,1000,10000))+
+  scale_x_discrete(limits=c("B","Se","Zn","V","Pb","Fe","Al","Cu","As"))+
+  theme(axis.text=element_text(size=15),
+        axis.title = element_text(size = 20)) + annotation_logticks(sides="b") + coord_flip()
+
+dev.off()
+```

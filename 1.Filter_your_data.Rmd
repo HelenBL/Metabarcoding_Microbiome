@@ -1,0 +1,124 @@
+---
+title: "Filtering"
+author: "Carles  i Liam"
+date: "17/02/2023"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+
+## Necessary libraries:
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("plyr") 
+library(plyr)
+library(vegan)
+# library(scales)
+# library(RColorBrewer)
+# library(VennDiagram)
+# library(gplots)
+# library(ggplot2)
+# library(ggpubr)
+# library(car)
+# library(pairwiseAdonis)
+# library(ggVennDiagram)
+# library(ggplot2)
+# library(eulerr)
+# library(devtools)
+# library(wrapr)
+ library(tidyr)
+ library(dplyr)
+ library(reshape)
+ library(reshape2)
+ library(data.table)
+# devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+# library(pairwiseAdonis)
+# library(tibble)
+ library(tidyverse)
+ library(dtplyr)
+# install.packages("rlang")
+# library(rlang)
+# sessionInfo()
+```
+
+### Data:
+
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+data <-read.delim("asv_taxonomy.txt", header = TRUE, sep = "\t", dec = ".")
+codes<-read.delim("metadata.csv", header = TRUE, sep = ";", dec = ".")
+
+
+codes <- codes[codes$YEAR== "2020",] 
+codes <- codes[codes$MONTH=="APR",]
+
+write.table(codes, "metadata_filtered.txt", sep= "\t")
+
+# We are left with only the numeric columns
+data<-data[,-c(1,286)]
+
+
+#We are left only with samples from 2020:
+microt<- t(data)
+microt <- cbind(microt, ID=rownames(microt))
+microt <- merge(microt, codes, by="ID")
+microt <- as.data.frame(microt)
+microt <- microt[codes$YEAR== "2020",] 
+microt <- microt[codes$MONTH=="APR",]  # Good Matrix for my data set
+microt<- na.omit(microt)
+
+rownames(microt) <- microt[,1]
+microt <- microt[,-1]
+micro <- t(microt)
+names(micro)<- rownames(microt)
+rownames(micro) <- colnames(microt)
+
+micro <- as.data.frame(apply(micro, 2, as.numeric)) 
+micro<- na.omit(micro)
+micro <- micro[1:39753,]
+
+taxo <- read.delim("RAW_taxo.csv", header = TRUE, sep = ";")
+micro$ID <- taxo$ID
+micro$ASV <- taxo$ASV_ID
+microASV <- micro
+micro <- micro[,c(1:104)]
+rownames(micro) <- taxo$ASV_ID
+micro <- as.data.frame(micro)
+
+micro <- micro[rowSums(micro)>0,]
+ASVlist <- rownames(micro)
+ASVlist <- as.vector(ASVlist)
+
+micro <- microASV[microASV$ASV %in% ASVlist,]
+
+bubl_taxo <-taxo[taxo$ASV_ID %in% ASVlist,]
+
+rownames(micro) <- micro$ASV
+micro <- micro[,c(1:105)]
+micro_bubl <- micro[,c(1:104)]
+
+write.table(micro, "asv_taxonomy_april2020_abundance.txt", sep= "\t")
+
+#Binary Matrix:
+microb <- micro[,c(1:105)]
+microb <- as.data.frame(microb)
+microb[microb>0] <- 1
+microb$ID[microb$ID=='1'] <- "Indet"
+
+microb <- as.data.frame(microb)
+
+write.table(microb, "asv_taxonomy_april2020_binary.txt", sep= "\t")
+```
+
+

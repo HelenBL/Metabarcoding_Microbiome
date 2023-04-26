@@ -1,0 +1,190 @@
+---
+  title: "Filtering"
+author: "Carles  i Liam"
+date: "17/02/2023"
+output:
+  html_document:
+  theme: readable
+toc: yes
+editor_options:
+  chunk_output_type: console
+---
+  
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+
+## Necessary libraries:
+
+```{r, message=FALSE, warning=FALSE}
+#install.packages("plyr") 
+library(plyr)
+library(vegan)
+# library(scales)
+# library(RColorBrewer)
+# library(VennDiagram)
+# library(gplots)
+# library(ggplot2)
+# library(ggpubr)
+# library(car)
+# library(pairwiseAdonis)
+# library(ggVennDiagram)
+# library(ggplot2)
+# library(eulerr)
+# library(devtools)
+# library(wrapr)
+library(tidyr)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(data.table)
+# devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+# library(pairwiseAdonis)
+# library(tibble)
+library(tidyverse)
+library(dtplyr)
+# install.packages("rlang")
+# library(rlang)
+# sessionInfo()
+```
+
+### Data:
+```{r, message=FALSE, warning=FALSE}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+codes<-read.delim("metadata_filtered.txt", header = TRUE, sep = "\t", dec = ".")
+taxo <- read.delim("RAW_taxo.csv", header = TRUE, sep = ";")
+micro <- read.table("asv_taxonomy_april2020_abundance.txt", sep = "\t")
+microb <- read.table("asv_taxonomy_april2020_binary.txt", sep = "\t")
+
+codes$ID<-gsub("BLA","1BLA",codes$ID)
+
+```
+
+### All core community:
+
+```{r, message=FALSE, warning=FALSE}
+bubl_micro <- micro[,c(1:104)]
+
+ASVlist <- rownames(bubl_micro)
+ASVlist <- as.vector(ASVlist)
+
+bubl_taxo <-taxo[taxo$ASV_ID %in% ASVlist,]
+
+bubl_plot<-aggregate(bubl_micro,list(bubl_taxo$ID),sum)
+names(bubl_plot)[1]<-"ID"
+
+kk <- melt(bubl_plot)  
+kk$variable<-gsub("BLA","1BLA",kk$variable)
+colnames(kk) <- c("Class", "ID", "Abundance")
+
+kplot <- merge(kk, codes, by="ID")
+kplot$Class<-gsub(" ","",kplot$Class)
+kplot$TISSUE<-gsub("DIGESTIVE","1GUT",kplot$TISSUE)
+
+ggplot(data=kplot, aes(x=ID, y=Class, fill=Class, size=Abundance)) +
+  geom_point(alpha=0.5, shape=21, color="black") +
+  scale_size(range = c(.1, 5), name="Population (M)") +
+  theme(legend.position="bottom",)+
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, size = 7.5))+
+  #theme_classic()+
+  facet_grid(~TISSUE)
+
+##download for manual editing
+write.table(kplot, "abundancies_tot_bubleplot.txt", sep="\t")
+
+```
+
+### Ten more abundant phylums:
+
+```{r, message=FALSE, warning=FALSE}
+## To see wich ones are the highest ones:
+
+discard <- c("Gammaproteobacteria", "Cyanobacteriia", "Alphaproteobacteria","Indet","Planctomycetes","Bacteroidia","Bacilli","Campylobacteria","Actinobacteria")
+
+kplot2 <- kplot
+length(which(!kplot2$Class %in% discard))
+kplot2$Class[which(!kplot2$Class %in% discard)]<-"Other"
+
+kplot2 <- kplot2[order(kplot2$Class, decreasing =F), ,drop = FALSE]
+
+
+write.table(kplot2, "abundancies_bubleplot.txt", sep="\t") 
+
+svg("Bubble_plot_Abundance10.svg", width=12.5,height=5)
+ggplot(data=kplot2, aes(x=ID, y=Class, fill=Class, size=Abundance)) +
+  geom_point(alpha=0.5, shape=21, color="black") +
+  scale_size(range = c(.1, 5), name="Population (M)") +
+  theme(legend.position="bottom",)+
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, size = 7.5))+
+  facet_grid(~ TISSUE)
+
+dev.off()
+```
+
+
+
+### All core community:
+
+```{r, message=FALSE, warning=FALSE}
+bubl_microb <- microb[,c(1:104)]
+
+ASVlistb <- rownames(bubl_microb)
+ASVlistb <- as.vector(ASVlistb)
+
+bubl_taxob <-taxo[taxo$ASV_ID %in% ASVlistb,]
+
+bubl_plotb<-aggregate(bubl_microb,list(bubl_taxob$ID),sum)
+names(bubl_plotb)[1]<-"ID"
+
+
+kkb <- melt(bubl_plotb)  
+colnames(kkb) <- c("Class", "ID", "Abundance")
+kkb$ID<-gsub("BLA","1BLA",kkb$ID)
+
+kplotb <- merge(kkb, codes, by="ID")
+kplotb$Class<-gsub(" ","",kplotb$Class)
+kplotb$TISSUE<-gsub("DIGESTIVE","1GUT",kplotb$TISSUE)
+
+ggplot(data=kplotb, aes(x=ID, y=Class, fill=Class, size=Abundance)) +
+  geom_point(alpha=0.5, shape=21, color="black") +
+  scale_size(range = c(.1, 5), name="Population (M)") +
+  theme(legend.position="none",)+
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, size = 7.5))+
+  #theme_classic()+
+  facet_grid(~TISSUE)
+
+##download for manual editing
+write.table(kplot, "binary_tot_bubleplot.txt", sep="\t")
+
+```
+
+### Ten more abundant phylums:
+
+```{r, message=FALSE, warning=FALSE}
+## To see wich ones are the highest ones:
+
+discard <- c("Gammaproteobacteria", "Cyanobacteriia", "Alphaproteobacteria","Indet","Planctomycetes","Bacteroidia","Bacilli","Campylobacteria","Actinobacteria")
+
+kplot2b <- kplotb
+length(which(!kplot2b$Class %in% discard))
+kplot2b$Class[which(!kplot2b$Class %in% discard)]<-"Other"
+
+kplot2b <- kplot2b[order(kplot2b$Class, decreasing =T), ,drop = FALSE]
+
+
+write.table(kplot2b, "binary_bubleplot.txt", sep="\t") 
+
+svg("Bubble_plot_SpeciesRich10.svg", width=12.5,height=5)
+ggplot(data=kplot2b, aes(x=ID, y=Class, fill=Class, size=Abundance)) +
+  geom_point(alpha=0.5, shape=21, color="black") +
+  scale_size(range = c(.1, 5), name="Population (M)") +
+  theme(legend.position="bottom",)+
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, size = 7.5))+
+  facet_grid(~ TISSUE)
+dev.off()
+```

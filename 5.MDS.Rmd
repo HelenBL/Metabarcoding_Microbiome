@@ -1,0 +1,149 @@
+---
+title: "MDS & Permanova"
+author: "Elena Baños"
+date: "4/4/2022"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+## Necessary libraries:
+```{r, message=FALSE, warning=FALSE}
+#install.packages('vegan')
+#install.packages('devtools')
+library(devtools)
+library(vegan)
+library(scales)
+library(RColorBrewer)
+library(VennDiagram)
+library(gplots)
+library(car)
+library(ggVennDiagram)
+library(ggplot2)
+library(eulerr)
+
+
+#devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+
+```
+
+## Importem el set de dades .csv:
+In $Session$ we can indicate the directory where we have the files and make it the main one.Or we can set our working diractory manually:
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+codes<-read.delim("metadata_filtered.txt", header = TRUE, sep = "\t", dec = ".")
+taxo <- read.delim("RAW_taxo.csv", header = TRUE, sep = ";")
+micro <- read.table("asv_taxonomy_april2020_abundance.txt", sep = "\t")
+microb <- read.table("asv_taxonomy_april2020_binary.txt", sep = "\t")
+Class <- micro$ID
+```
+
+The file we want to open contains the OTUs or AVS's and others.
+
+```{r}
+#transforma a frequencia relativa
+microrf<-prop.table(as.matrix(micro[,c(1:104)]),2)
+microRF<-as.data.frame(microrf)
+```
+
+## MDS
+
+### With all traits off:
+```{r}
+#calculem la dissimilaritat de Bray-Curtis, que es la que fa vegdist per defecte
+microRF<-t(microRF)
+write.table(microRF, "asv_april2020_relativefreq.txt", sep ='\t')
+BC<-vegdist(microRF)
+BC <- as.matrix(BC)
+write.table(BC, "april2020_BC.txt", sep ='\t')
+```
+
+MDS with all the samples:
+   
+```{r}
+BC <- read.table("april2020_BC.txt", sep = "\t")
+metanmds1 <- metaMDS(BC,trymax=1000, autotransform = F, k=2) #Iteraccion per veure el millor valor. 
+metanmds1$stress 
+#per guardar el plot en .pdf o en jpg
+
+summary(metanmds1$points)
+
+plot(metanmds1$points,type="n",xaxt="n",yaxt="n",xlab="",ylab="",xlim=c(-.65,0.5),ylim=c(-.4,.35),main=c("stress= ",round(metanmds1$stress,digits=3),"MDS Bray-Curtis"))
+
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="BAR"),], pch=15,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="VIL"),], pch=16,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="BLA"),], pch=17,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+
+
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("grey",alpha=0.25),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("grey",alpha=0.25),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("grey",alpha=0.25),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+pdf("nMDS_Juveniles_BC.pdf", width=7,height=5)
+dev.off()
+
+
+
+plot(metanmds1$points,type="n",xaxt="n",yaxt="n",xlab="",ylab="",xlim=c(-.65,0.5),ylim=c(-.4,.35),main=c("stress= ",round(metanmds1$stress,digits=3),"MDS Bray-Curtis"))
+
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="BAR"),], pch=15,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="VIL"),], pch=16,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="WATER"&codes$POP=="BLA"),], pch=17,col=adjustcolor("#85C1E9",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("#EC7063",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("#58D68D",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BAR"&codes$STAGE=="ADULT"),], pch=15,col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="VIL"&codes$STAGE=="ADULT"),], pch=16,col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BLA"&codes$STAGE=="ADULT"),], pch=17,col=adjustcolor("#F4D03F",alpha=0.8),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="GILL"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("grey",alpha=0.25),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="DIGESTIVE"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("grey",alpha=0.25),cex=2)
+
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BAR"&codes$STAGE=="JUV"),], pch=15, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="VIL"&codes$STAGE=="JUV"),], pch=16, col=adjustcolor("grey",alpha=0.25),cex=2)
+points(metanmds1$points[which(codes$TISSUE=="TUNIC"&codes$POP=="BLA"&codes$STAGE=="JUV"),], pch=17, col=adjustcolor("grey",alpha=0.25),cex=2)
+
+pdf("nMDS_Adults_BC.pdf", width=7 ,height=5)
+dev.off()
+```

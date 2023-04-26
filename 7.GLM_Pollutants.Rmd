@@ -1,0 +1,413 @@
+---
+title: "GLM POLLUTANTS"
+author: "Carles Galià Camps"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(rsq)
+library(lme4) # for the analysis
+library(haven) # to load the SPSS .sav file
+library(tidyverse) # needed for data manipulation.
+library(RColorBrewer) # needed for some extra colours in one of the graphs
+library(lmerTest)# to get p-value estimations that are not part of the standard lme4 packages
+library(car)
+library(emmeans)
+library(pbkrtest)
+library(ggpubr)
+library(vegan)
+library(scales)
+library(RColorBrewer)
+library(VennDiagram)
+library(gplots)
+library(car)
+library(pairwiseAdonis)
+library(ggVennDiagram)
+library(ggplot2)
+library(eulerr)
+library(devtools)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(data.table)
+library(tidyverse)
+library(pairwiseAdonis)
+#install.packages("afex")
+library(afex)
+```
+
+### Carrega i modifica el data. Primer descartem aigua
+
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+pollutants <- read.table("pollutants_raw.txt", sep = "\t", header=T)
+pollutants <- pollutants[c(2:46),]
+#obtingut d'editar fora el richness 
+pollutants <- melt(pollutants)
+pollutants2 <- pollutants[c(1:2,4:6)]
+```
+
+
+```{r}
+pollutants2$STAGE[pollutants2$STAGE!="3WATER"]<-"TUNICATE"
+
+glm_pol_As2 <- pollutants2[pollutants2$variable=="As",]
+glm_pol_Cu2 <- pollutants2[pollutants2$variable=="Cu",]
+glm_pol_Al2 <- pollutants2[pollutants2$variable=="Al",]
+glm_pol_Fe2 <- pollutants2[pollutants2$variable=="Fe",]
+glm_pol_Pb2 <- pollutants2[pollutants2$variable=="Pb",]
+glm_pol_V2 <- pollutants2[pollutants2$variable=="V",]
+glm_pol_Zn2 <- pollutants2[pollutants2$variable=="Zn",]
+glm_pol_Se2 <- pollutants2[pollutants2$variable=="Se",]
+glm_pol_B2 <- pollutants2[pollutants2$variable=="B",]
+
+glm_pol_As2$value<-rank(glm_pol_As2$value,"average")
+glm_pol_Cu2$value<-rank(glm_pol_Cu2$value,"average")
+glm_pol_Al2$value<-rank(glm_pol_Al2$value,"average")
+glm_pol_Fe2$value<-rank(glm_pol_Fe2$value,"average")
+glm_pol_Pb2$value<-rank(glm_pol_Pb2$value,"average")
+glm_pol_V2$value<-rank(glm_pol_V2$value,"average")
+glm_pol_Zn2$value<-rank(glm_pol_Zn2$value,"average")
+glm_pol_Se2$value<-rank(glm_pol_Se2$value,"average")
+glm_pol_B2$value<-rank(glm_pol_B2$value,"average")
+```
+
+
+##RICHNESS
+
+```{r}
+pol_As2 <- glm(value ~                STAGE,                data = glm_pol_As2)
+pol_Cu2 <- glm(value ~                STAGE,                data = glm_pol_Cu2)
+pol_Al2 <- glm(value ~                STAGE,                data = glm_pol_Al2)
+pol_Fe2 <- glm(value ~                STAGE,                data = glm_pol_Fe2)
+pol_Pb2 <- glm(value ~                STAGE,                data = glm_pol_Pb2)
+pol_V2 <- glm(value ~                 STAGE,                data = glm_pol_V2)
+pol_Zn2 <- glm(value ~                STAGE,                data = glm_pol_Zn2)
+pol_Se2 <- glm(value ~                STAGE,                data = glm_pol_Se2)
+pol_B2 <- glm(value ~                 STAGE,                data = glm_pol_B2)
+
+#qqnorm(resid(GLM_rich_t)) + qqline(resid(GLM_rich_t))
+
+hist(resid(pol_As2))
+hist(resid(pol_Cu2))
+hist(resid(pol_Al2))
+hist(resid(pol_Fe2))
+hist(resid(pol_Pb2))
+hist(resid(pol_V2))
+hist(resid(pol_Zn2))
+hist(resid(pol_Se2))
+hist(resid(pol_B2))
+
+
+shapiro.test(residuals(pol_As2))
+shapiro.test(residuals(pol_Cu2))
+shapiro.test(residuals(pol_Al2))
+shapiro.test(residuals(pol_Fe2))
+shapiro.test(residuals(pol_Pb2))
+shapiro.test(residuals(pol_V2))
+shapiro.test(residuals(pol_Zn2))
+shapiro.test(residuals(pol_Se2))
+shapiro.test(residuals(pol_B2))
+
+
+anova(pol_As2, test="F")
+anova(pol_Cu2, test="F")
+anova(pol_Al2, test="F")
+anova(pol_Fe2, test="F")
+anova(pol_Pb2, test="F")
+anova(pol_V2, test="F")
+anova(pol_Zn2, test="F")
+anova(pol_Se2, test="F")
+anova(pol_B2, test="F")
+
+
+rsq(pol_As2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Cu2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Al2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Fe2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Pb2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_V2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Zn2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Se2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_B2,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+
+pol_As2 <- emmeans(pol_As2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Cu2 <- emmeans(pol_Cu2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Al2 <- emmeans(pol_Al2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Fe2 <- emmeans(pol_Fe2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Pb2 <- emmeans(pol_Pb2,pairwise ~ STAGE, adjust = "tuckey")
+pol_V2 <- emmeans(pol_V2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Zn2 <- emmeans(pol_Zn2,pairwise ~ STAGE, adjust = "tuckey")
+pol_Se2 <- emmeans(pol_Se2,pairwise ~ STAGE, adjust = "tuckey")
+pol_B2 <- emmeans(pol_B2,pairwise ~ STAGE, adjust = "tuckey")
+
+
+pairs(pol_As2)
+pairs(pol_Cu2)
+pairs(pol_Al2)
+pairs(pol_Fe2)
+pairs(pol_Pb2)
+pairs(pol_V2)
+pairs(pol_Zn2)
+pairs(pol_Se2)
+pairs(pol_B2)
+
+
+emmip(pol_As2, ~ STAGE , CIs=TRUE)
+emmip(pol_Cu2, ~ STAGE , CIs=TRUE)
+emmip(pol_Al2, ~ STAGE , CIs=TRUE)
+emmip(pol_Fe2, ~ STAGE , CIs=TRUE)
+emmip(pol_Pb2, ~ STAGE , CIs=TRUE)
+emmip(pol_V2, ~ STAGE , CIs=TRUE)
+emmip(pol_Zn2, ~ STAGE , CIs=TRUE)
+emmip(pol_Se2, ~ STAGE , CIs=TRUE)
+emmip(pol_B2, ~ STAGE , CIs=TRUE)
+```
+#DIFERENCIES ENTRE TEIXITS ADULTS
+
+```{r}
+pollutantsw <- pollutants[pollutants$TISSUE!="3WATER",]
+pollutantsa <- pollutantsw[pollutantsw$STAGE=="2ADULT",]
+
+glm_pol_As <- pollutantsa[pollutantsa$variable=="As",]
+glm_pol_Cu <- pollutantsa[pollutantsa$variable=="Cu",]
+glm_pol_Al <- pollutantsa[pollutantsa$variable=="Al",]
+glm_pol_Fe <- pollutantsa[pollutantsa$variable=="Fe",]
+glm_pol_Pb <- pollutantsa[pollutantsa$variable=="Pb",]
+glm_pol_V <- pollutantsa[pollutantsa$variable=="V",]
+glm_pol_Zn <- pollutantsa[pollutantsa$variable=="Zn",]
+glm_pol_Se <- pollutantsa[pollutantsa$variable=="Se",]
+glm_pol_B <- pollutantsa[pollutantsa$variable=="B",]
+
+glm_pol_As$value<-rank(glm_pol_As$value,"average")
+glm_pol_Cu$value<-rank(glm_pol_Cu$value,"average")
+glm_pol_Al$value<-rank(glm_pol_Al$value,"average")
+glm_pol_Fe$value<-rank(glm_pol_Fe$value,"average")
+glm_pol_Pb$value<-rank(glm_pol_Pb$value,"average")
+glm_pol_V$value<-rank(glm_pol_V$value,"average")
+glm_pol_Zn$value<-rank(glm_pol_Zn$value,"average")
+glm_pol_Se$value<-rank(glm_pol_Se$value,"average")
+glm_pol_B$value<-rank(glm_pol_B$value,"average")
+```
+
+
+```{r}
+pol_As <- glm(value ~                TISSUE*POP,                data = glm_pol_As)
+pol_Cu <- glm(value ~                TISSUE*POP,                data = glm_pol_Cu)
+pol_Al <- glm(value ~                TISSUE*POP,              data = glm_pol_Al)
+pol_Fe <- glm(value ~                TISSUE*POP,                data = glm_pol_Fe)
+pol_Pb <- glm(value ~                TISSUE*POP,                data = glm_pol_Pb)
+pol_V <- glm(value ~                 TISSUE*POP,                data = glm_pol_V)
+pol_Zn <- glm(value ~                TISSUE*POP,                data = glm_pol_Zn)
+pol_Se <- glm(value ~                TISSUE*POP,                data = glm_pol_Se)
+pol_B <- glm(value ~                 TISSUE*POP,                data = glm_pol_B)
+
+#qqnorm(resid(GLM_rich_t)) + qqline(resid(GLM_rich_t))
+
+hist(resid(pol_As))
+hist(resid(pol_Cu))
+hist(resid(pol_Al))
+hist(resid(pol_Fe))
+hist(resid(pol_Pb))
+hist(resid(pol_V))
+hist(resid(pol_Zn))
+hist(resid(pol_Se))
+hist(resid(pol_B))
+
+
+shapiro.test(residuals(pol_As))
+shapiro.test(residuals(pol_Cu))
+shapiro.test(residuals(pol_Al))
+shapiro.test(residuals(pol_Fe))
+shapiro.test(residuals(pol_Pb))
+shapiro.test(residuals(pol_V))
+shapiro.test(residuals(pol_Zn))
+shapiro.test(residuals(pol_Se))
+shapiro.test(residuals(pol_B))
+
+
+anova(pol_As, test="F")
+anova(pol_Cu, test="F")
+anova(pol_Al, test="F")
+anova(pol_Fe, test="F")
+anova(pol_Pb, test="F")
+anova(pol_V, test="F")
+anova(pol_Zn, test="F")
+anova(pol_Se, test="F")
+anova(pol_B, test="F")
+
+
+rsq(pol_As,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Cu,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Al,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Fe,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Pb,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_V,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Zn,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Se,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_B,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+
+pol_As <- emmeans(pol_As,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Cu <- emmeans(pol_Cu,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Al <- emmeans(pol_Al,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Fe <- emmeans(pol_Fe,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Pb <- emmeans(pol_Pb,pairwise ~ TISSUE, adjust = "tuckey")
+pol_V <- emmeans(pol_V,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Zn <- emmeans(pol_Zn,pairwise ~ TISSUE, adjust = "tuckey")
+pol_Se <- emmeans(pol_Se,pairwise ~ TISSUE, adjust = "tuckey")
+pol_B <- emmeans(pol_B,pairwise ~ TISSUE, adjust = "tuckey")
+
+
+pairs(pol_As)
+pairs(pol_Cu)
+pairs(pol_Al)
+pairs(pol_Fe)
+pairs(pol_Pb)
+pairs(pol_V)
+pairs(pol_Zn)
+pairs(pol_Se)
+pairs(pol_B)
+
+
+emmip(pol_As, ~ TISSUE , CIs=TRUE)
+emmip(pol_Cu, ~ TISSUE , CIs=TRUE)
+emmip(pol_Al, ~ TISSUE , CIs=TRUE)
+emmip(pol_Fe, ~ TISSUE , CIs=TRUE)
+emmip(pol_Pb, ~ TISSUE , CIs=TRUE)
+emmip(pol_V, ~ TISSUE , CIs=TRUE)
+emmip(pol_Zn, ~ TISSUE , CIs=TRUE)
+emmip(pol_Se, ~ TISSUE , CIs=TRUE)
+emmip(pol_B, ~ TISSUE , CIs=TRUE)
+```
+
+
+
+```{r}
+pollutantsw <- pollutants[pollutants$TISSUE!="3WATER",]
+pollutantst <- pollutantsw[pollutantsw$TISSUE=="1TUNIC",]
+
+glm_pol_As <- pollutantst[pollutantst$variable=="As",]
+glm_pol_Cu <- pollutantst[pollutantst$variable=="Cu",]
+glm_pol_Al <- pollutantst[pollutantst$variable=="Al",]
+glm_pol_Fe <- pollutantst[pollutantst$variable=="Fe",]
+glm_pol_Pb <- pollutantst[pollutantst$variable=="Pb",]
+glm_pol_V <- pollutantst[pollutantst$variable=="V",]
+glm_pol_Zn <- pollutantst[pollutantst$variable=="Zn",]
+glm_pol_Se <- pollutantst[pollutantst$variable=="Se",]
+glm_pol_B <- pollutantst[pollutantst$variable=="B",]
+
+glm_pol_As$value<-rank(glm_pol_As$value,"average")
+glm_pol_Cu$value<-rank(glm_pol_Cu$value,"average")
+glm_pol_Al$value<-rank(glm_pol_Al$value,"average")
+glm_pol_Fe$value<-rank(glm_pol_Fe$value,"average")
+glm_pol_Pb$value<-rank(glm_pol_Pb$value,"average")
+glm_pol_V$value<-rank(glm_pol_V$value,"average")
+glm_pol_Zn$value<-rank(glm_pol_Zn$value,"average")
+glm_pol_Se$value<-rank(glm_pol_Se$value,"average")
+glm_pol_B$value<-rank(glm_pol_B$value,"average")
+```
+
+
+```{r}
+pol_As <- glm(value ~                STAGE*POP,                data = glm_pol_As)
+pol_Cu <- glm(value ~                STAGE*POP,                data = glm_pol_Cu)
+pol_Al <- glm(value ~                STAGE*POP,              data = glm_pol_Al)
+pol_Fe <- glm(value ~                STAGE*POP,                data = glm_pol_Fe)
+pol_Pb <- glm(value ~                STAGE*POP,                data = glm_pol_Pb)
+pol_V <- glm(value ~                 STAGE*POP,                data = glm_pol_V)
+pol_Zn <- glm(value ~                STAGE*POP,                data = glm_pol_Zn)
+pol_Se <- glm(value ~                STAGE*POP,                data = glm_pol_Se)
+pol_B <- glm(value ~                 STAGE*POP,                data = glm_pol_B)
+
+#qqnorm(resid(GLM_rich_t)) + qqline(resid(GLM_rich_t))
+
+hist(resid(pol_As))
+hist(resid(pol_Cu))
+hist(resid(pol_Al))
+hist(resid(pol_Fe))
+hist(resid(pol_Pb))
+hist(resid(pol_V))
+hist(resid(pol_Zn))
+hist(resid(pol_Se))
+hist(resid(pol_B))
+
+
+shapiro.test(residuals(pol_As))
+shapiro.test(residuals(pol_Cu))
+shapiro.test(residuals(pol_Al))
+shapiro.test(residuals(pol_Fe))
+shapiro.test(residuals(pol_Pb))
+shapiro.test(residuals(pol_V))
+shapiro.test(residuals(pol_Zn))
+shapiro.test(residuals(pol_Se))
+shapiro.test(residuals(pol_B))
+
+
+anova(pol_As, test="F")
+anova(pol_Cu, test="F")
+anova(pol_Al, test="F")
+anova(pol_Fe, test="F")
+anova(pol_Pb, test="F")
+anova(pol_V, test="F")
+anova(pol_Zn, test="F")
+anova(pol_Se, test="F")
+anova(pol_B, test="F")
+
+
+rsq(pol_As,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Cu,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Al,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Fe,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Pb,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_V,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Zn,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_Se,adj=TRUE,type=c('v','kl','sse','lr','n'))
+rsq(pol_B,adj=TRUE,type=c('v','kl','sse','lr','n'))
+
+
+pol_As <- emmeans(pol_As,pairwise ~ STAGE, adjust = "tuckey")
+pol_Cu <- emmeans(pol_Cu,pairwise ~ STAGE, adjust = "tuckey")
+pol_Al <- emmeans(pol_Al,pairwise ~ STAGE, adjust = "tuckey")
+pol_Fe <- emmeans(pol_Fe,pairwise ~ STAGE, adjust = "tuckey")
+pol_Pb <- emmeans(pol_Pb,pairwise ~ STAGE, adjust = "tuckey")
+pol_V <- emmeans(pol_V,pairwise ~ STAGE, adjust = "tuckey")
+pol_Zn <- emmeans(pol_Zn,pairwise ~ STAGE, adjust = "tuckey")
+pol_Se <- emmeans(pol_Se,pairwise ~ STAGE, adjust = "tuckey")
+pol_B <- emmeans(pol_B,pairwise ~ STAGE, adjust = "tuckey")
+
+
+pairs(pol_As)
+pairs(pol_Cu)
+pairs(pol_Al)
+pairs(pol_Fe)
+pairs(pol_Pb)
+pairs(pol_V)
+pairs(pol_Zn)
+pairs(pol_Se)
+pairs(pol_B)
+
+
+emmip(pol_As, ~ STAGE , CIs=TRUE)
+emmip(pol_Cu, ~ STAGE , CIs=TRUE)
+emmip(pol_Al, ~ STAGE , CIs=TRUE)
+emmip(pol_Fe, ~ STAGE , CIs=TRUE)
+emmip(pol_Pb, ~ STAGE , CIs=TRUE)
+emmip(pol_V, ~ STAGE , CIs=TRUE)
+emmip(pol_Zn, ~ STAGE , CIs=TRUE)
+emmip(pol_Se, ~ STAGE , CIs=TRUE)
+emmip(pol_B, ~ STAGE , CIs=TRUE)
+```

@@ -1,0 +1,100 @@
+---
+title: "Species Richness"
+author: "Elena Baños"
+date: "19/02/2023"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::include_graphics
+options(width = 50)
+```
+
+# Opening a new project:
+## Necessary libraries:
+```{r, message=FALSE, warning=FALSE}
+library(ggpubr)
+library(vegan)
+library(scales)
+library(RColorBrewer)
+library(VennDiagram)
+library(gplots)
+library(car)
+library(pairwiseAdonis)
+library(ggVennDiagram)
+library(ggplot2)
+library(eulerr)
+library(devtools)
+library(dplyr)
+library(reshape)
+library(reshape2)
+library(data.table)
+library(tidyverse)
+
+devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+
+```
+## Importem el set de dades .csv:
+In $Session$ we can indicate the directory where we have the files and make it the main one.Or we can set our working diractory manually:
+The file we want to open contains the OTUs or AVS's and others.
+
+```{r}
+setwd("E:/styela/Molecular/Microbioma/microbioma")
+
+codes <- read.delim("metadata_filtered.txt", header = TRUE, sep = "\t", dec = ".")
+taxo <- read.delim("RAW_taxo.csv", header = TRUE, sep = ";")
+micro <- read.table("asv_taxonomy_april2020_abundance.txt", sep = "\t")
+microb <- read.table("asv_taxonomy_april2020_binary.txt", sep = "\t")
+```
+
+
+```{r}
+micro <- micro[,c(1:104)]
+microb <- microb[,c(1:104)]
+
+diver<-diversity(micro,"shannon",MARGIN=2)
+diver <- as.data.frame(diver)
+
+microrar<-rarefy(micro,min(colSums(micro)),MARGIN = 2)
+microrar <- as.data.frame(microrar)
+
+richness<-cbind(microrar,diver,codes[,c(2:4)])
+colnames(richness) <- c("Richness","Shannon","POP","TISSUE","STAGE")
+write.table(richness,"richness_shannon.txt",row.names = F,sep="\t")
+#write.table(richness,"richness_shannon_plot.txt",row.names = F,sep="\t")
+
+## Species Richness:
+```
+
+
+```{r}
+richness2 <- read.table("richness_shannon_plot.txt", sep = "\t", header=T) #obtingut d'editar fora el richness shannon
+richness2 <- melt(richness2)
+
+
+#svg("shannon_richness.svg", width=7, height=4)
+ggplot(richness2, aes(x=variable, color=TISSUE, fill=STAGE)) + 
+  geom_boxplot(aes(y=value)) +
+  #geom_jitter(size=2, position=position_jitterdodge(0.1)) +
+  xlab(NULL) + 
+  ylab("Shannon diversity - Species richness/100") +
+  facet_grid(factor(POP, levels=c("BLA","BAR", "VIL")) ~ factor(TISSUE,levels=c("GUT","GILL", "TUNIC","WATER"))) +
+  coord_cartesian(ylim = c(1,12)) +
+  theme_classic() +
+  theme( legend.position="bottom", 
+         panel.grid.minor = element_blank(), 
+         panel.grid.major = element_blank(),
+         panel.background = element_rect(fill = "transparent", colour = NA))+
+    scale_fill_manual(name = "variable", breaks=c("1JUVENILE","2ADULT"), values=c("#DB7093","#815c97"))+
+    scale_color_manual( values=c(  "black","black","black", "black")) +
+  
+  scale_x_discrete(limits=c("Shannon","Richness"))
+
+#dev.off()
+```
